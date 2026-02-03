@@ -1,0 +1,2 @@
+docker build -t app .
+docker run -p 90:4060 app

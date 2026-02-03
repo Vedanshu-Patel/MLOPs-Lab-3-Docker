@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Wine | AI Classifier</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #ff006e; /* Wine Red */
+            --secondary: #8338ec; /* Deep Purple */
+            --accent: #fb5607; /* Orange */
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: radial-gradient(circle at top left, #1a1a2e, #16213e, #0f172a);
+            color: #e2e8f0;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        /* Ambient Background Glow */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 40%;
+            height: 40%;
+            background: radial-gradient(circle, var(--secondary), transparent 70%);
+            opacity: 0.2;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 10s infinite alternate;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -10%;
+            right: -10%;
+            width: 40%;
+            height: 40%;
+            background: radial-gradient(circle, var(--primary), transparent 70%);
+            opacity: 0.2;
+            filter: blur(80px);
+            z-index: -1;
+            animation: float 10s infinite alternate-reverse;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            position: relative;
+        }
+
+        /* Glass Card Effect */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+            letter-spacing: 1px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(255, 0, 110, 0.2);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        button.submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+        }
+
+        button.submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 0, 110, 0.4);
+        }
+
+        button.submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Prediction Result Area */
+        .result-container {
+            margin-top: 20px;
+            text-align: center;
+            overflow: hidden;
+            transition: all 0.5s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            display: none;
+        }
+
+        .result-container.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .prediction-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 50px;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 15px;
+            box-shadow: 0 0 15px rgba(255, 0, 110, 0.2);
+            font-size: 0.85rem;
+        }
+
+        .wine-result {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .wine-class {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            margin: 10px 0;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 0, 110, 0.5);
+        }
+
+        .confidence-text {
+            color: #94a3b8;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(20px, 20px); }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        .btn-content {
+            display: inline-block;
+        }
+
+        button.submit-btn.loading .btn-content {
+            visibility: hidden;
+        }
+
+        button.submit-btn.loading .spinner {
+            display: block;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            color: #94a3b8;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <div class="glass-card">
+            <h1>🍷 NEURAL WINE</h1>
+            <p class="subtitle">AI-POWERED WINE CLASSIFICATION SYSTEM</p>
+            
+            <!-- Toggle Button -->
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <button type="button" id="toggleInput" class="toggle-btn">
+                    Switch to JSON Input
+                </button>
+            </div>
+            
+            <form id="predictionForm">
+                <!-- JSON Input Area (Hidden by default) -->
+                <div id="jsonInputArea" style="display: none;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #94a3b8;">Paste JSON Here:</label>
+                    <textarea id="jsonInput" placeholder='{"alcohol": 14.23, "malic_acid": 1.71, ...}' style="
+                        width: 100%;
+                        height: 200px;
+                        background: rgba(0, 0, 0, 0.2);
+                        border: 1px solid var(--glass-border);
+                        color: #fff;
+                        padding: 16px;
+                        border-radius: 12px;
+                        font-family: 'Courier New', monospace;
+                        font-size: 0.9rem;
+                        resize: vertical;
+                        box-sizing: border-box;
+                        margin-bottom: 1rem;
+                    "></textarea>
+                </div>
+
+                <!-- Form Grid (Shown by default) -->
+                <div class="form-grid" id="formInputArea">
+                    <div class="input-group">
+                        <label for="alcohol">Alcohol (%)</label>
+                        <input type="number" id="alcohol" name="alcohol" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="malic_acid">Malic Acid</label>
+                        <input type="number" id="malic_acid" name="malic_acid" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="ash">Ash</label>
+                        <input type="number" id="ash" name="ash" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="alcalinity_of_ash">Alcalinity of Ash</label>
+                        <input type="number" id="alcalinity_of_ash" name="alcalinity_of_ash" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="magnesium">Magnesium</label>
+                        <input type="number" id="magnesium" name="magnesium" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="total_phenols">Total Phenols</label>
+                        <input type="number" id="total_phenols" name="total_phenols" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="flavanoids">Flavanoids</label>
+                        <input type="number" id="flavanoids" name="flavanoids" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="nonflavanoid_phenols">Nonflavanoid Phenols</label>
+                        <input type="number" id="nonflavanoid_phenols" name="nonflavanoid_phenols" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="proanthocyanins">Proanthocyanins</label>
+                        <input type="number" id="proanthocyanins" name="proanthocyanins" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="color_intensity">Color Intensity</label>
+                        <input type="number" id="color_intensity" name="color_intensity" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="hue">Hue</label>
+                        <input type="number" id="hue" name="hue" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="od280_od315">OD280/OD315</label>
+                        <input type="number" id="od280_od315" name="od280_od315" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="proline">Proline</label>
+                        <input type="number" id="proline" name="proline" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <span class="btn-content">ANALYZE</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+        </div>
+
+        <div id="resultArea" class="glass-card result-container">
+            <div class="prediction-badge" id="confidenceBadge">CONFIDENCE: --</div>
+            
+            <div class="wine-result">
+                <div class="wine-class" id="predictedClass"></div>
+                <p class="confidence-text" id="confidenceText"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            var useJson = false;
+
+            // Toggle between form and JSON input
+            $('#toggleInput').on('click', function() {
+                useJson = !useJson;
+                if (useJson) {
+                    $('#formInputArea').hide();
+                    $('#jsonInputArea').show();
+                    $(this).text('Switch to Form Input');
+                    // Remove required from form inputs
+                    $('#formInputArea input').removeAttr('required');
+                } else {
+                    $('#jsonInputArea').hide();
+                    $('#formInputArea').show();
+                    $(this).text('Switch to JSON Input');
+                    // Add required back to form inputs
+                    $('#formInputArea input').attr('required', 'required');
+                }
+            });
+
+            // Set initial required attributes for form mode
+            $('#formInputArea input').attr('required', 'required');
+
+            $('#predictionForm').on('submit', function(event) {
+                event.preventDefault(); 
+                
+                // UI Loading State
+                var $btn = $('.submit-btn');
+                $btn.addClass('loading');
+
+                var formData = {};
+
+                if (useJson) {
+                    // Parse JSON input
+                    try {
+                        formData = JSON.parse($('#jsonInput').val());
+                    } catch (e) {
+                        alert('Invalid JSON format! Please check your input.');
+                        $btn.removeClass('loading');
+                        return;
+                    }
+                } else {
+                    // Get data from form fields
+                    formData = {
+                        'alcohol': $('#alcohol').val(),
+                        'malic_acid': $('#malic_acid').val(),
+                        'ash': $('#ash').val(),
+                        'alcalinity_of_ash': $('#alcalinity_of_ash').val(),
+                        'magnesium': $('#magnesium').val(),
+                        'total_phenols': $('#total_phenols').val(),
+                        'flavanoids': $('#flavanoids').val(),
+                        'nonflavanoid_phenols': $('#nonflavanoid_phenols').val(),
+                        'proanthocyanins': $('#proanthocyanins').val(),
+                        'color_intensity': $('#color_intensity').val(),
+                        'hue': $('#hue').val(),
+                        'od280_od315': $('#od280_od315').val(),
+                        'proline': $('#proline').val()
+                    };
+                }
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/predict',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    dataType: 'json'
+                }).done(function(data) {
+                    
+                    // Update Text
+                    $('#predictedClass').text(data.predicted_class.toUpperCase());
+                    $('#confidenceText').text('Model Confidence: ' + data.confidence);
+                    $('#confidenceBadge').text('CONFIDENCE: ' + data.confidence);
+
+                    // Show Result with animation
+                    $('#resultArea').addClass('active');
+
+                    // Reset Button
+                    $btn.removeClass('loading');
+
+                }).fail(function(data) {
+                    alert('SYSTEM ERROR: Neural Link Disconnected.');
+                    $btn.removeClass('loading');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
