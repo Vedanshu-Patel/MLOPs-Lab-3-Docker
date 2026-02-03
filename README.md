@@ -1,4 +1,4 @@
-Sample json file for testing:
+Sample json for testing:
 
 {
   "alcohol": 12.51,
